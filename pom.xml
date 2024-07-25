@@ -10,7 +10,7 @@
   <name>tql-delayqueue</name>
   <url>http://maven.apache.org</url>
   <modules>
-    <module>delayqueue</module>
+    <module>core</module>
     <module>starter</module>
   </modules>
 
