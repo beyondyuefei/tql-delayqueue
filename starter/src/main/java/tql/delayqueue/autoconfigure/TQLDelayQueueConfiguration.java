@@ -1,14 +1,5 @@
 package tql.delayqueue.autoconfigure;
 
-import tql.delayqueue.TQLExecuteService;
-import tql.delayqueue.TQLExecuteServiceFactory;
-import tql.delayqueue.callback.CallbackListener;
-import tql.delayqueue.callback.CallbackManager;
-import tql.delayqueue.config.GlobalConfig;
-import tql.delayqueue.config.NamespaceConfig;
-import tql.delayqueue.partition.PartitionMaster;
-import tql.delayqueue.partition.PartitionWorker;
-import tql.delayqueue.utils.TQLDelayQueueException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.InitializingBean;
@@ -17,6 +8,14 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import tql.delayqueue.TQLDelayQueueLifecycle;
+import tql.delayqueue.TQLExecuteService;
+import tql.delayqueue.TQLExecuteServiceFactory;
+import tql.delayqueue.callback.CallbackListener;
+import tql.delayqueue.callback.CallbackManager;
+import tql.delayqueue.config.GlobalConfig;
+import tql.delayqueue.config.NamespaceConfig;
+import tql.delayqueue.utils.TQLDelayQueueException;
 
 import java.util.Map;
 
@@ -29,8 +28,6 @@ import java.util.Map;
 public class TQLDelayQueueConfiguration implements InitializingBean, DisposableBean {
     @Autowired
     private TQLDelayQueueProperties tqlDelayQueueProperties;
-    private PartitionMaster partitionMaster;
-    private PartitionWorker partitionWorker;
     private final ApplicationContext applicationContext;
 
     public TQLDelayQueueConfiguration(final ApplicationContext applicationContext) {
@@ -90,16 +87,12 @@ public class TQLDelayQueueConfiguration implements InitializingBean, DisposableB
             CallbackManager.registerCallback(namespace.name(), callbackListener);
         }
 
-        partitionMaster = new PartitionMaster();
-        partitionMaster.init();
-        partitionWorker = new PartitionWorker();
-        partitionWorker.init();
+        TQLDelayQueueLifecycle.start();
     }
 
     @Override
     public void destroy() {
-        partitionMaster.shutdown();
-        partitionWorker.shutdown();
+        TQLDelayQueueLifecycle.stop();
     }
 
     @Bean
