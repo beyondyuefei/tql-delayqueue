@@ -1,8 +1,6 @@
 package tql.delayqueue.autoconfigure;
 
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.DisposableBean;
-import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.ApplicationContext;
@@ -17,6 +15,8 @@ import tql.delayqueue.config.GlobalConfig;
 import tql.delayqueue.config.NamespaceConfig;
 import tql.delayqueue.utils.TQLDelayQueueException;
 
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
 import java.util.Map;
 
 /**
@@ -25,7 +25,7 @@ import java.util.Map;
 @Configuration
 @EnableConfigurationProperties(TQLDelayQueueProperties.class)
 @Slf4j
-public class TQLDelayQueueConfiguration implements InitializingBean, DisposableBean {
+public class TQLDelayQueueConfiguration{
     @Autowired
     private TQLDelayQueueProperties tqlDelayQueueProperties;
     private final ApplicationContext applicationContext;
@@ -34,8 +34,8 @@ public class TQLDelayQueueConfiguration implements InitializingBean, DisposableB
         this.applicationContext = applicationContext;
     }
 
-    @Override
-    public void afterPropertiesSet() {
+    @PostConstruct
+    public void init() {
         final Map<String, CallbackListener> listenerMap = applicationContext.getBeansOfType(CallbackListener.class);
         if(listenerMap.isEmpty()) {
             log.warn("not found TQL-DelayQueue CallbackListener impl, so do not start TQL-DelayQueue and return now!");
@@ -90,7 +90,7 @@ public class TQLDelayQueueConfiguration implements InitializingBean, DisposableB
         TQLDelayQueueLifecycle.start();
     }
 
-    @Override
+    @PreDestroy
     public void destroy() {
         TQLDelayQueueLifecycle.stop();
     }
