@@ -238,7 +238,7 @@ public class PartitionWorker {
             }
         }
 
-        private static String getNamespace(String partitionName) {
+        private String getNamespace(String partitionName) {
             return partitionName.split("_")[0];
         }
     }
