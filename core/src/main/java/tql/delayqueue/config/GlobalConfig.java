@@ -16,7 +16,7 @@ public class GlobalConfig {
     public static volatile int pollIntervalTimeInMillSecs = 5 * 60 * 1000;
     public static volatile String partitionAssignerName = "random";
     public static volatile String partitionSelectorName = "hash";
-    public static volatile String redisHost = Utils.getLocalAddress().getHostAddress();
+    public static volatile String redisHost = "127.0.0.1";
     public static volatile int redisPort = 6379;
     public static volatile String redisPassword;
     public static volatile int redisDatabase = 0;
