@@ -19,13 +19,8 @@ public class NamespaceConfig {
         if (StringUtils.isBlank(namespace)) {
             throw new IllegalArgumentException("namespace can not be blank!");
         }
-
-        if (partitionSize < 1) {
-            throw new IllegalArgumentException("partitionSize should be positive integer!");
-        }
-
         this.namespace = namespace;
-        this.partitionSize = partitionSize;
+        this.partitionSize = Math.max(partitionSize, 1);
         this.executeBizBatchSize = Math.max(executeBizBatchSize, 1);
     }
 }
