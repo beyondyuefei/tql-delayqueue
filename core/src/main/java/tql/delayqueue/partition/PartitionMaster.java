@@ -39,7 +39,7 @@ public class PartitionMaster {
     private final ExecutorService executorService = Executors.newSingleThreadExecutor(new ThreadFactory() {
         @Override
         public Thread newThread(Runnable r) {
-            final Thread thread = newThread(r);
+            final Thread thread = new Thread(r);
             thread.setDaemon(true);
             thread.setName("TQL-DelayQueue-PartitionMaster-Thread");
             return thread;
