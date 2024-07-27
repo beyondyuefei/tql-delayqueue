@@ -2,15 +2,13 @@ package tql.delayqueue.partition.assigner.impl;
 
 import tql.delayqueue.config.NamespaceConfig;
 import tql.delayqueue.partition.PartitionWorker;
-import tql.delayqueue.partition.assigner.PartitionAssignerService;
+import tql.delayqueue.partition.assigner.AbstractPartitionAssignerService;
 
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 
-public class RandomPartitionAssignerServiceImpl implements PartitionAssignerService {
+public class RandomPartitionAssignerServiceImpl extends AbstractPartitionAssignerService {
     /**
      *
      * @param namespaceConfig
@@ -27,12 +25,6 @@ public class RandomPartitionAssignerServiceImpl implements PartitionAssignerServ
             workerPartitionList.add(i);
             workersPartitionMap.put(workerUniqueIdentifier, workerPartitionList);
         }
-        return workersPartitionMap;
-    }
-
-    private Map<String, List<Integer>> initWorkersPartitionMap(final List<PartitionWorker> workers) {
-        final Map<String, List<Integer>> workersPartitionMap = new HashMap<>();
-        workers.forEach(partitionWorker -> workersPartitionMap.put(partitionWorker.getWorkerUniqueIdentifier(), new ArrayList<>()));
         return workersPartitionMap;
     }
 }

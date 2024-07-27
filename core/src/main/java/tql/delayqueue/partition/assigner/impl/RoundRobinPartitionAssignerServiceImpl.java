@@ -2,10 +2,8 @@ package tql.delayqueue.partition.assigner.impl;
 
 import tql.delayqueue.config.NamespaceConfig;
 import tql.delayqueue.partition.PartitionWorker;
-import tql.delayqueue.partition.assigner.PartitionAssignerService;
+import tql.delayqueue.partition.assigner.AbstractPartitionAssignerService;
 
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -13,7 +11,7 @@ import java.util.Map;
  * 注： 这里是针对每一个的namespace都执行一边RR，那么在 worker数量多于namespace的partitionSize情况下，就会出现多出的worker分配不到partition任务的情况
  * TODO: 待优化, 思路可参考 kafka 的 RR算法 ?
  */
-public class RoundRobinPartitionAssignerServiceImpl implements PartitionAssignerService {
+public class RoundRobinPartitionAssignerServiceImpl extends AbstractPartitionAssignerService{
     @Override
     public Map<String, List<Integer>> assignWorkersPartition(final NamespaceConfig namespaceConfig, final List<PartitionWorker> workers) {
         final Map<String, List<Integer>> workersPartitionMap = initWorkersPartitionMap(workers);
@@ -35,11 +33,5 @@ public class RoundRobinPartitionAssignerServiceImpl implements PartitionAssigner
             workerNumber = partitionNumber;
         }
         return workerNumber;
-    }
-
-    private Map<String, List<Integer>> initWorkersPartitionMap(final List<PartitionWorker> workers) {
-        final Map<String, List<Integer>> workersPartitionMap = new HashMap<>();
-        workers.forEach(partitionWorker -> workersPartitionMap.put(partitionWorker.getWorkerUniqueIdentifier(), new ArrayList<>()));
-        return workersPartitionMap;
     }
 }
