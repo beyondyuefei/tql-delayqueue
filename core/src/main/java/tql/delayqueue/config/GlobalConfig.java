@@ -11,8 +11,8 @@ import java.util.List;
 public class GlobalConfig {
     public static volatile String appUniqueIdentifier = "default:" + Utils.getUUIDByFormatter();
     public static final List<NamespaceConfig> namespaceConfigs = new ArrayList<>();
-    public static volatile int noHeartBeatTimeInMillSec = 3000;
-    public static volatile int heartbeatIntervalTimeInMillis = 3000;
+    public static volatile int noHeartBeatTimeInMillSec = 5000;
+    public static volatile int heartbeatIntervalTimeInMillis = 1000;
     public static volatile int pollIntervalTimeInMillSecs = 5 * 60 * 1000;
     public static volatile String partitionAssignerName = "random";
     public static volatile String partitionSelectorName = "hash";

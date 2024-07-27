@@ -148,12 +148,12 @@ public class PartitionMaster {
     }
 
     private boolean isWorkerNoHeartBeat(PartitionWorker partitionWorker) {
-        final long currentTimeMillis = System.currentTimeMillis();
-        if ((currentTimeMillis - partitionWorker.getLastHeartbeatTimeInMillis()) > noHeartBeatTimeInMillSec) {
-            log.warn("the worker: {} no heartBeat over:{}, crash or reStarting ?", partitionWorker.getWorkerUniqueIdentifier(), noHeartBeatTimeInMillSec);
+        final long lastHeartbeatTimeInMillis = partitionWorker.getLastHeartbeatTimeInMillis();
+        final long timeGapInMillSec = System.currentTimeMillis() - lastHeartbeatTimeInMillis;
+        if (timeGapInMillSec > noHeartBeatTimeInMillSec) {
+            log.warn("the worker: {} no heartBeat over:{}, crash or reStarting ? lastHeartbeatTimeInMillis:{}, timeGap:{}", partitionWorker.getWorkerUniqueIdentifier(), noHeartBeatTimeInMillSec, lastHeartbeatTimeInMillis, timeGapInMillSec);
             return true;
         } else {
-            partitionWorker.setLastHeartbeatTimeInMillis(currentTimeMillis);
             return false;
         }
     }

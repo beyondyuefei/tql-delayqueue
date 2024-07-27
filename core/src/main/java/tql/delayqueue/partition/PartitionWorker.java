@@ -60,7 +60,7 @@ public class PartitionWorker implements Serializable {
             heartbeatThread.start();
             pollThread = new PollThread("TQL-Partition-Worker-Pool-Thread");
             pollThread.start();
-        }else {
+        } else {
             log.info("worker had initialized yet!");
         }
     }
@@ -82,14 +82,13 @@ public class PartitionWorker implements Serializable {
 
         @Override
         public void run() {
-            synchronized (PartitionWorker.this) {
-                while (true) {
+            while (true) {
+                synchronized (PartitionWorker.this) {
                     try {
-                        final long currentTimeInMillis = System.currentTimeMillis();
-                        final long sinceLastHeartTimeInMillSecs = currentTimeInMillis - lastHeartbeatTimeInMillis;
+                        final long sinceLastHeartTimeInMillSecs = System.currentTimeMillis() - lastHeartbeatTimeInMillis;
                         if (sinceLastHeartTimeInMillSecs < heartbeatIntervalTimeInMillis) {
                             final long nextHeartbeatTimeInMillis = heartbeatIntervalTimeInMillis - sinceLastHeartTimeInMillSecs;
-                            wait(nextHeartbeatTimeInMillis);
+                            PartitionWorker.this.wait(nextHeartbeatTimeInMillis);
                             continue;
                         }
 
@@ -98,7 +97,7 @@ public class PartitionWorker implements Serializable {
                         for (int i = 0; i < size; i++) {
                             final PartitionWorker partitionWorker = remotePartitionWorkers.get(i);
                             if (partitionWorker.getWorkerUniqueIdentifier().equals(workerUniqueIdentifier)) {
-                                if (((currentTimeInMillis - lastPollTimeInMillSecs) > pollIntervalTimeInMillSecs) &&
+                                if (((System.currentTimeMillis() - lastPollTimeInMillSecs) > pollIntervalTimeInMillSecs) &&
                                         !latestAssignedNamespacePartitions.isEmpty()) {
                                     remotePartitionWorkers.fastRemove(i);
                                     log.info("remove this worker from remote because poll timeout And do not send heartbeat now");
@@ -106,14 +105,16 @@ public class PartitionWorker implements Serializable {
                                     // heartbeat thread stop
                                     return;
                                 } else {
-                                    partitionWorker.setLastHeartbeatTimeInMillis(currentTimeInMillis);
+                                    final long currentTimeMillis = System.currentTimeMillis();
+                                    partitionWorker.setLastHeartbeatTimeInMillis(currentTimeMillis);
                                     remotePartitionWorkers.fastSet(i, partitionWorker);
-                                    updateTime();
+                                    log.debug("update worker lastHeartbeatTimeInMillis success, worker:{}, lastHeartbeatTimeInMillis:{}", partitionWorker.getWorkerUniqueIdentifier(), partitionWorker.getLastHeartbeatTimeInMillis());
+                                    updateTime(currentTimeMillis);
                                 }
-                                return;
                             }
                         }
-                        log.error("unexpected execute code here! because this worker don't have partition assigned");
+                        // todo: ?
+                       // log.error("unexpected execute code here! because this worker don't have partition assigned");
                     } catch (Exception e) {
                         log.error("send heartBeat error", e);
                     }
@@ -133,7 +134,7 @@ public class PartitionWorker implements Serializable {
                 try {
                     final ConcurrentHashMap<String, List<Integer>> tempMap = new ConcurrentHashMap<>();
                     for (NamespaceConfig namespaceConfig : GlobalConfig.namespaceConfigs) {
-                        final List<Integer> workerPartitions = (List<Integer> )redissonClient.getMap(appUniqueIdentifier + "_" + namespaceConfig.getNamespace()).get(workerUniqueIdentifier);
+                        final List<Integer> workerPartitions = (List<Integer>) redissonClient.getMap(appUniqueIdentifier + "_" + namespaceConfig.getNamespace()).get(workerUniqueIdentifier);
                         if (workerPartitions != null && !workerPartitions.isEmpty()) {
                             tempMap.put(namespaceConfig.getNamespace(), new ArrayList<>(workerPartitions));
                         }
@@ -191,7 +192,7 @@ public class PartitionWorker implements Serializable {
                                     // 获取延迟队列数据，不从队列中删除
                                     final Object value = peekQueueValue(partitionName);
                                     // 说明在正常干活，更新心跳等时间
-                                    updateTime();
+                                    updateTime(System.currentTimeMillis());
                                     // 只要延迟队列中还有此partition中的数据，那么就此线程就继续干活
                                     if (value != null) {
                                         values.add(value);
@@ -215,7 +216,7 @@ public class PartitionWorker implements Serializable {
                     }
 
                     gotoSleep();
-                }catch (Exception e) {
+                } catch (Exception e) {
                     log.error("worker poll thread error", e);
                 }
             }
@@ -240,7 +241,7 @@ public class PartitionWorker implements Serializable {
             try {
                 CompletableFuture.allOf(cfs.toArray(new CompletableFuture[0])).get(3, TimeUnit.SECONDS);
             } catch (Exception e) {
-               log.error("cfu get result error, partition:{}", partitionName, e);
+                log.error("cfu get result error, partition:{}", partitionName, e);
             } finally {
                 values.forEach(v -> redissonClient.getBlockingDeque(partitionName).removeFirst());
                 values.clear();
@@ -252,8 +253,7 @@ public class PartitionWorker implements Serializable {
         }
     }
 
-    private void updateTime() {
-        final long currentTime = System.currentTimeMillis();
+    private void updateTime(final long currentTime) {
         this.lastPollTimeInMillSecs = currentTime;
         this.lastHeartbeatTimeInMillis = currentTime;
     }
