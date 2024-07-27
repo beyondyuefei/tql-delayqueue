@@ -17,7 +17,7 @@ public class RoundRobinPartitionAssignerServiceImpl implements PartitionAssigner
     @Override
     public Map<String, List<Integer>> assignWorkersPartition(final NamespaceConfig namespaceConfig, final List<PartitionWorker> workers) {
         final Map<String, List<Integer>> workersPartitionMap = initWorkersPartitionMap(workers);
-        for (int partitionNumber = 0; partitionNumber < namespaceConfig.getPartitionSize(); partitionNumber++) {
+        for (int partitionNumber = 1; partitionNumber < namespaceConfig.getPartitionSize(); partitionNumber++) {
             final int workerNumber = selectWorker(workers, partitionNumber);
             final PartitionWorker partitionWorker = workers.get(workerNumber);
             final List<Integer> workerPartitionList = workersPartitionMap.get(partitionWorker.getWorkerUniqueIdentifier());

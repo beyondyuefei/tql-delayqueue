@@ -19,17 +19,20 @@ public class RandomPartitionAssignerServiceImpl implements PartitionAssignerServ
      */
     @Override
     public Map<String, List<Integer>> assignWorkersPartition(NamespaceConfig namespaceConfig, List<PartitionWorker> workers) {
-        final Map<String, List<Integer>> workersPartition = new HashMap<>();
+        final Map<String, List<Integer>> workersPartitionMap = initWorkersPartitionMap(workers);
         for (int i = 1;i <= namespaceConfig.getPartitionSize();i++) {
             final PartitionWorker partitionWorker = workers.get(ThreadLocalRandom.current().nextInt(workers.size()));
             final String workerUniqueIdentifier = partitionWorker.getWorkerUniqueIdentifier();
-            List<Integer> partitions = workersPartition.get(workerUniqueIdentifier);
-            if (partitions == null) {
-                partitions = new ArrayList<>();
-            }
-            partitions.add(i);
-            workersPartition.put(workerUniqueIdentifier, partitions);
+            final List<Integer> workerPartitionList = workersPartitionMap.get(workerUniqueIdentifier);
+            workerPartitionList.add(i);
+            workersPartitionMap.put(workerUniqueIdentifier, workerPartitionList);
         }
-        return workersPartition;
+        return workersPartitionMap;
+    }
+
+    private Map<String, List<Integer>> initWorkersPartitionMap(final List<PartitionWorker> workers) {
+        final Map<String, List<Integer>> workersPartitionMap = new HashMap<>();
+        workers.forEach(partitionWorker -> workersPartitionMap.put(partitionWorker.getWorkerUniqueIdentifier(), new ArrayList<>()));
+        return workersPartitionMap;
     }
 }

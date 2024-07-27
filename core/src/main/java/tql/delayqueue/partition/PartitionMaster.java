@@ -143,7 +143,7 @@ public class PartitionMaster {
             final Map<String, List<Integer>> workersPartition = partitionAssignerService.assignWorkersPartition(namespaceConfig, partitionWorkers);
             log.info("reBalance workers partition, namespace:{}, partitionInfo:{}", namespaceConfig.getNamespace(), workersPartition);
             // set to redisson, todo: 可以优化 ? 提取 getMap，使得远程不需要每次都远程 getMap ?
-            redissonClient.getMap(appUniqueIdentifier).putAll(workersPartition);
+            redissonClient.getMap(appUniqueIdentifier + "_" + namespaceConfig.getNamespace()).putAll(workersPartition);
         }
     }
 

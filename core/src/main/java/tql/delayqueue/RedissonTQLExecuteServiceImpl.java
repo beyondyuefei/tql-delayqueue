@@ -37,7 +37,7 @@ class RedissonTQLExecuteServiceImpl implements TQLExecuteService {
             throw new IllegalArgumentException("NamespaceConfig not found for namespace: " + namespace);
         }
         final int partitionIndex = partitionSelectorService.selectPartition(delayQueueElement.getKey(), namespaceConfig);
-        final String partitionName = namespace + "_" + partitionIndex;
+        final String partitionName = GlobalConfig.appUniqueIdentifier + "_" + namespace + "_" + partitionIndex;
         addDelayQueue(delayQueueElement, delaySeconds, partitionName);
     }
 

@@ -12,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RList;
 import org.redisson.api.RedissonClient;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -23,26 +24,26 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 @Slf4j
 @Getter
-public class PartitionWorker {
-    private  String appUniqueIdentifier;
-    private  String workerUniqueIdentifier;
+public class PartitionWorker implements Serializable {
+    private volatile String appUniqueIdentifier;
+    private volatile String workerUniqueIdentifier;
     @Setter
     private volatile long lastHeartbeatTimeInMillis;
     @Setter
     private volatile long lastPollTimeInMillSecs;
-    private transient  long heartbeatIntervalTimeInMillis;
-    private transient  long pollIntervalTimeInMillSecs;
-    private ExecutorService partitionSpecialBossExecutor;
+    private transient volatile long heartbeatIntervalTimeInMillis;
+    private transient volatile long pollIntervalTimeInMillSecs;
+    private transient ExecutorService partitionSpecialBossExecutor;
     /**
      * key: namespace; value: 每次并发执行数，如果设置为1 (默认值)，则为顺序执行
      */
-    private  ConcurrentHashMap<String, Integer> executeBizBatchSize;
-    private final ConcurrentHashSet<String> currentExecutingPartitionBossThread = new ConcurrentHashSet<>();
-    private ConcurrentHashMap<String, List<Integer>> latestAssignedNamespacePartitions = new ConcurrentHashMap<>();
-    private  Thread heartbeatThread;
-    private  Thread pollThread;
-    private final RedissonClient redissonClient = RedissonClientFactory.getInstance();
-    private final AtomicBoolean initialized = new AtomicBoolean(false);
+    private transient volatile ConcurrentHashMap<String, Integer> executeBizBatchSize;
+    private transient final ConcurrentHashSet<String> currentExecutingPartitionBossThread = new ConcurrentHashSet<>();
+    private transient volatile ConcurrentHashMap<String, List<Integer>> latestAssignedNamespacePartitions = new ConcurrentHashMap<>();
+    private transient Thread heartbeatThread;
+    private transient Thread pollThread;
+    private transient final RedissonClient redissonClient = RedissonClientFactory.getInstance();
+    private transient final AtomicBoolean initialized = new AtomicBoolean(false);
 
     public void init() {
         if (initialized.compareAndSet(false, true)) {
@@ -97,7 +98,8 @@ public class PartitionWorker {
                         for (int i = 0; i < size; i++) {
                             final PartitionWorker partitionWorker = remotePartitionWorkers.get(i);
                             if (partitionWorker.getWorkerUniqueIdentifier().equals(workerUniqueIdentifier)) {
-                                if ((currentTimeInMillis - lastPollTimeInMillSecs) > pollIntervalTimeInMillSecs) {
+                                if (((currentTimeInMillis - lastPollTimeInMillSecs) > pollIntervalTimeInMillSecs) &&
+                                        !latestAssignedNamespacePartitions.isEmpty()) {
                                     remotePartitionWorkers.fastRemove(i);
                                     log.info("remove this worker from remote because poll timeout And do not send heartbeat now");
                                     // todo：清除分配给此worker的 namespace和partition
@@ -129,14 +131,21 @@ public class PartitionWorker {
         public void run() {
             while (true) {
                 try {
-                    final ConcurrentHashMap<String, List<Integer>> tempMap = new ConcurrentHashMap<>(redissonClient.getMap(appUniqueIdentifier));
+                    final ConcurrentHashMap<String, List<Integer>> tempMap = new ConcurrentHashMap<>();
+                    for (NamespaceConfig namespaceConfig : GlobalConfig.namespaceConfigs) {
+                        final List<Integer> workerPartitions = (List<Integer> )redissonClient.getMap(appUniqueIdentifier + "_" + namespaceConfig.getNamespace()).get(workerUniqueIdentifier);
+                        if (workerPartitions != null && !workerPartitions.isEmpty()) {
+                            tempMap.put(namespaceConfig.getNamespace(), new ArrayList<>(workerPartitions));
+                        }
+                    }
+
                     // 当分配给此Worker的partitions数量有变化时，重新初始化boss线程池
                     if (tempMap.values().size() != latestAssignedNamespacePartitions.values().size()) {
                         latestAssignedNamespacePartitions = new ConcurrentHashMap<>(tempMap);
                         partitionSpecialBossExecutor = Executors.newFixedThreadPool(latestAssignedNamespacePartitions.values().size(), new ThreadFactory() {
                             @Override
                             public Thread newThread(Runnable r) {
-                                final Thread thread = newThread(r);
+                                final Thread thread = new Thread(r);
                                 thread.setDaemon(true);
                                 // todo: 加上序号 ?
                                 thread.setName("TQL-Worker-Poll-Thread-Number");

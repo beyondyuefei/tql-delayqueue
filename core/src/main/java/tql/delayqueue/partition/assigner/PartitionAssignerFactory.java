@@ -16,9 +16,9 @@ public class PartitionAssignerFactory {
 
     public static PartitionAssignerService create(final String name) {
         if (name.equals("random")) {
-            return partitionAssignerMap.computeIfAbsent(name, notUsed -> new RoundRobinPartitionAssignerServiceImpl());
-        } else if (name.equals("round-robin")) {
             return partitionAssignerMap.computeIfAbsent(name, notUsed -> new RandomPartitionAssignerServiceImpl());
+        } else if (name.equals("round-robin")) {
+            return partitionAssignerMap.computeIfAbsent(name, notUsed -> new RoundRobinPartitionAssignerServiceImpl());
         } else {
             final String errorMsg = "unknown PartitionAssignerService name: " + name;
             log.error(errorMsg);
