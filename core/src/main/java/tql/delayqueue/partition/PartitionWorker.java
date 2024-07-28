@@ -88,6 +88,7 @@ public class PartitionWorker implements Serializable {
                         final long sinceLastHeartTimeInMillSecs = System.currentTimeMillis() - lastHeartbeatTimeInMillis;
                         if (sinceLastHeartTimeInMillSecs < heartbeatIntervalTimeInMillis) {
                             final long nextHeartbeatTimeInMillis = heartbeatIntervalTimeInMillis - sinceLastHeartTimeInMillSecs;
+                            // todo: 如果只是单线程，可以优化为 sleep
                             PartitionWorker.this.wait(nextHeartbeatTimeInMillis);
                             continue;
                         }
