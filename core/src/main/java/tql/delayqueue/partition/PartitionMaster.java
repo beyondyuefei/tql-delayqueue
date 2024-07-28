@@ -129,6 +129,8 @@ public class PartitionMaster {
             unHealthWorkersIndex.forEach(remotePartitionWorkers::fastRemove);
             localPartitionWorkers = new ArrayList<>(remotePartitionWorkers);
             reBalanceWorkersPartition0(localPartitionWorkers);
+        }else {
+            log.debug("all worker all health~");
         }
     }
 

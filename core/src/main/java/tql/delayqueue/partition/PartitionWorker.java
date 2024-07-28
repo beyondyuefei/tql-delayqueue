@@ -143,15 +143,12 @@ public class PartitionWorker implements Serializable {
                     // 当分配给此Worker的partitions数量有变化时，重新初始化boss线程池
                     if (tempMap.values().size() != latestAssignedNamespacePartitions.values().size()) {
                         latestAssignedNamespacePartitions = new ConcurrentHashMap<>(tempMap);
-                        partitionSpecialBossExecutor = Executors.newFixedThreadPool(latestAssignedNamespacePartitions.values().size(), new ThreadFactory() {
-                            @Override
-                            public Thread newThread(Runnable r) {
-                                final Thread thread = new Thread(r);
-                                thread.setDaemon(true);
-                                // todo: 加上序号 ?
-                                thread.setName("TQL-Worker-Poll-Thread-Number");
-                                return thread;
-                            }
+                        partitionSpecialBossExecutor = Executors.newFixedThreadPool(latestAssignedNamespacePartitions.values().size(), r -> {
+                            final Thread thread = new Thread(r);
+                            thread.setDaemon(true);
+                            // todo: 加上序号 ?
+                            thread.setName("TQL-Worker-Poll-Thread-Number");
+                            return thread;
                         });
                     }
 
@@ -170,7 +167,7 @@ public class PartitionWorker implements Serializable {
                                     // 虽然partition已经分配给此Worker了 (理论上同一个时间段内只会一个Worker在消费)，但在分布式环境下可能存在两个Worker消费一个partition的瞬时场景 (比如：新加入一个Worker引发了Master的partition reBalance导致此partition的Worker转移，则可能因为两个Worker进程间的时延而同时消费此partition)，
                                     //  所以这里再一个分布式的抢锁，做个兜底处理，以保证只会有一个Worker消费同一个partition & 新的Worker最终会获得此锁接棒继续消费此partition
                                     if (redissonClient.getLock(partitionName).tryLock(3, TimeUnit.SECONDS)) {
-                                        log.info("get lock success, partition:{}, worker:{}", partitionName, workerUniqueIdentifier);
+                                        log.debug("get lock success, partition:{}, worker:{}", partitionName, workerUniqueIdentifier);
                                         break;
                                     }
                                 } catch (Exception e) {
@@ -188,29 +185,27 @@ public class PartitionWorker implements Serializable {
                                     if (!latestAssignedNamespacePartitions.containsKey(partitionName)) {
                                         break;
                                     }
-
-                                    // 获取延迟队列数据，不从队列中删除
-                                    final Object value = peekQueueValue(partitionName);
-                                    // 说明在正常干活，更新心跳等时间
-                                    updateTime(System.currentTimeMillis());
                                     // 只要延迟队列中还有此partition中的数据，那么就此线程就继续干活
-                                    if (value != null) {
+                                    for (final Object value : redissonClient.getBlockingDeque(partitionName)) {
+                                        // 说明在正常干活，更新心跳等时间
+                                        updateTime(System.currentTimeMillis());
                                         values.add(value);
-                                    } else {
-                                        // 如果延迟队列中此partition中已没有数据了，则退出/释放当前线程到线程池中以便复用
-                                        break;
+                                        if (values.size() == namespaceBatchSize) {
+                                            executeBizCallbackAndRemoveQueueValue(values, partitionName);
+                                        }
                                     }
+                                    // 延迟队列中此partition中已没有数据了，就退出当前poll循环 (以便线程释放到线程池中以便复用)
+                                    break;
                                 } catch (Exception e) {
                                     log.error("partition thread execute error, partitionName:" + partitionName, e);
                                     break;
                                 }
-                                if (values.size() == namespaceBatchSize) {
-                                    executeBizCallbackAndRemoveQueueValue(values, partitionName);
-                                }
                             }
+                            // 延迟队列中此partition中已没有数据了，但之前积攒的消息数量还没有触发callback的执行，则这里直接执行掉
                             if (!values.isEmpty()) {
                                 executeBizCallbackAndRemoveQueueValue(values, partitionName);
                             }
+                            // 线程释放到线程池中以便复用
                             currentExecutingPartitionBossThread.remove(partitionName);
                         });
                     }
@@ -221,11 +216,6 @@ public class PartitionWorker implements Serializable {
                 }
             }
         }
-
-        private Object peekQueueValue(String partitionName) {
-            return redissonClient.getBlockingDeque(partitionName).peekFirst();
-        }
-
         private void executeBizCallbackAndRemoveQueueValue(List<Object> values, String partitionName) {
             final String namespace = getNamespace(partitionName);
             final List<CompletableFuture<Void>> cfs = new ArrayList<>();

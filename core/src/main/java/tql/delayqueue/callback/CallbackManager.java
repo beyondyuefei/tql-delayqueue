@@ -18,6 +18,7 @@ public class CallbackManager {
     }
 
     public static void doCallback(final String namespace, final Object data) {
+        log.debug("TQL-delayqueue do callback, namespace:{}, data:{}", namespace, data);
         final CallbackListener callbackListener = consumerConcurrentHashMap.get(namespace);
         if (callbackListener != null) {
             try {
