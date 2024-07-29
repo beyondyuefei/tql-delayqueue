@@ -221,7 +221,7 @@ public class PartitionWorker implements Serializable {
                 }
             }
         }
-        private void executeBizCallbackAndRemoveQueueValue(List<Object> values, String partitionName, String namespace) {
+        private void executeBizCallbackAndRemoveQueueValue(final List<Object> values, final String partitionName, final String namespace) {
             log.debug("batch execute callback, partitionName:{}, values:{}", partitionName, values);
             final List<CompletableFuture<Void>> cfs = new ArrayList<>();
             for (final Object value : values) {
@@ -239,6 +239,7 @@ public class PartitionWorker implements Serializable {
                 log.error("cfu get result error, partition:{}", partitionName, e);
             } finally {
                 values.forEach(v -> redissonClient.getBlockingDeque(partitionName).removeFirst());
+                // todo: 这里要clear()，否则下一次会重复执行 peek()，但觉得这里来兜味道不太对，应该在上一层/调用层自洽掉
                 values.clear();
             }
         }
