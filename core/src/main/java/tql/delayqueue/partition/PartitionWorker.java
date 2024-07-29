@@ -39,6 +39,9 @@ public class PartitionWorker implements Serializable {
      */
     private transient volatile ConcurrentHashMap<String, Integer> executeBizBatchSize;
     private transient final ConcurrentHashSet<String> currentExecutingPartitionBossThread = new ConcurrentHashSet<>();
+    /**
+     * key: namespace;value: 此namespace对应当前worker的partitions
+     */
     private transient volatile ConcurrentHashMap<String, List<Integer>> latestAssignedNamespacePartitions = new ConcurrentHashMap<>();
     private transient Thread heartbeatThread;
     private transient Thread pollThread;
@@ -154,7 +157,7 @@ public class PartitionWorker implements Serializable {
                     }
 
                     final List<String> partitionsName = new ArrayList<>(latestAssignedNamespacePartitions.values().size());
-                    latestAssignedNamespacePartitions.forEach((k, v) -> partitionsName.add(k + "_" + v));
+                    latestAssignedNamespacePartitions.forEach((namespace, paritionIndexList) -> paritionIndexList.forEach(partitionIndex -> partitionsName.add(GlobalConfig.appUniqueIdentifier + "_" + namespace + "_" + partitionIndex)));
                     for (String partitionName : partitionsName) {
                         // 当前partition的延迟队列中还有数据在poll和消费处理，则不再二次分配此partition的Boss线程资源
                         if (currentExecutingPartitionBossThread.contains(partitionName)) {
@@ -167,7 +170,7 @@ public class PartitionWorker implements Serializable {
                                 try {
                                     // 虽然partition已经分配给此Worker了 (理论上同一个时间段内只会一个Worker在消费)，但在分布式环境下可能存在两个Worker消费一个partition的瞬时场景 (比如：新加入一个Worker引发了Master的partition reBalance导致此partition的Worker转移，则可能因为两个Worker进程间的时延而同时消费此partition)，
                                     //  所以这里再一个分布式的抢锁，做个兜底处理，以保证只会有一个Worker消费同一个partition & 新的Worker最终会获得此锁接棒继续消费此partition
-                                    if (redissonClient.getLock(partitionName).tryLock(3, TimeUnit.SECONDS)) {
+                                    if (redissonClient.getLock(appUniqueIdentifier + "_worker_" + partitionName).tryLock(3, TimeUnit.SECONDS)) {
                                         log.debug("get lock success, partition:{}, worker:{}", partitionName, workerUniqueIdentifier);
                                         break;
                                     }
@@ -183,16 +186,17 @@ public class PartitionWorker implements Serializable {
                             while (true) {
                                 try {
                                     // partition的分配已经更新了的场景，在每次拉取数据处理之前，再做一下check
-                                    if (!latestAssignedNamespacePartitions.containsKey(partitionName)) {
+                                    if (!latestAssignedNamespacePartitions.containsKey(namespace)) {
                                         break;
                                     }
                                     // 只要延迟队列中还有此partition中的数据，那么就此线程就继续干活
+                                    // todo: 确认一下如果 deque中的 partitionName之前不存在，那么这里就会出错 ？ 为啥呢，redisson不是应该返回一个空queue吗
                                     for (final Object value : redissonClient.getBlockingDeque(partitionName)) {
                                         // 说明在正常干活，更新心跳等时间
                                         updateTime(System.currentTimeMillis());
                                         values.add(value);
                                         if (values.size() == namespaceBatchSize) {
-                                            executeBizCallbackAndRemoveQueueValue(values, partitionName);
+                                            executeBizCallbackAndRemoveQueueValue(values, partitionName, namespace);
                                         }
                                     }
                                     // 延迟队列中此partition中已没有数据了，就退出当前poll循环 (以便线程释放到线程池中以便复用)
@@ -204,7 +208,7 @@ public class PartitionWorker implements Serializable {
                             }
                             // 延迟队列中此partition中已没有数据了，但之前积攒的消息数量还没有触发callback的执行，则这里直接执行掉
                             if (!values.isEmpty()) {
-                                executeBizCallbackAndRemoveQueueValue(values, partitionName);
+                                executeBizCallbackAndRemoveQueueValue(values, partitionName, namespace);
                             }
                             // 线程释放到线程池中以便复用
                             currentExecutingPartitionBossThread.remove(partitionName);
@@ -217,8 +221,8 @@ public class PartitionWorker implements Serializable {
                 }
             }
         }
-        private void executeBizCallbackAndRemoveQueueValue(List<Object> values, String partitionName) {
-            final String namespace = getNamespace(partitionName);
+        private void executeBizCallbackAndRemoveQueueValue(List<Object> values, String partitionName, String namespace) {
+            log.debug("batch execute callback, partitionName:{}, values:{}", partitionName, values);
             final List<CompletableFuture<Void>> cfs = new ArrayList<>();
             for (final Object value : values) {
                 cfs.add(CompletableFuture.runAsync(() -> {
@@ -240,7 +244,7 @@ public class PartitionWorker implements Serializable {
         }
 
         private String getNamespace(String partitionName) {
-            return partitionName.split("_")[0];
+            return partitionName.split("_")[1];
         }
     }
 

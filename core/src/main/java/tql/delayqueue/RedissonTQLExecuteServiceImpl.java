@@ -46,6 +46,7 @@ class RedissonTQLExecuteServiceImpl implements TQLExecuteService {
             final RBlockingDeque<T> blockingDeque = redissonClient.getBlockingDeque(partitionName);
             final RDelayedQueue<T> delayedQueue = redissonClient.getDelayedQueue(blockingDeque);
             delayedQueue.offer(delayQueueElement.getData(), delaySeconds, TimeUnit.SECONDS);
+            log.debug("add delayqueue success, partitionName:{}, value:{}", partitionName, delayQueueElement.getData());
         } catch (Exception e) {
             final String errorMsg = String.format("add TQL-DelayQueue error, namespace:%s, partitionName:%s", delayQueueElement.getNamespace(), partitionName);
             log.error(errorMsg);

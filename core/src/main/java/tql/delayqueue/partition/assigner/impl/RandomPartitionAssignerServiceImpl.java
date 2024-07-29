@@ -18,7 +18,7 @@ public class RandomPartitionAssignerServiceImpl extends AbstractPartitionAssigne
     @Override
     public Map<String, List<Integer>> assignWorkersPartition(NamespaceConfig namespaceConfig, List<PartitionWorker> workers) {
         final Map<String, List<Integer>> workersPartitionMap = initWorkersPartitionMap(workers);
-        for (int i = 1;i <= namespaceConfig.getPartitionSize();i++) {
+        for (int i = 0;i < namespaceConfig.getPartitionSize();i++) {
             final PartitionWorker partitionWorker = workers.get(ThreadLocalRandom.current().nextInt(workers.size()));
             final String workerUniqueIdentifier = partitionWorker.getWorkerUniqueIdentifier();
             final List<Integer> workerPartitionList = workersPartitionMap.get(workerUniqueIdentifier);
