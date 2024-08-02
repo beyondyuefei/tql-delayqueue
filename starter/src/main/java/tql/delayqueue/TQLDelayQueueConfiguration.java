@@ -1,4 +1,4 @@
-package tql.delayqueue.autoconfigure;
+package tql.delayqueue;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -6,9 +6,6 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import tql.delayqueue.TQLDelayQueueLifecycle;
-import tql.delayqueue.TQLExecuteService;
-import tql.delayqueue.TQLExecuteServiceFactory;
 import tql.delayqueue.callback.CallbackListener;
 import tql.delayqueue.callback.CallbackManager;
 import tql.delayqueue.config.GlobalConfig;

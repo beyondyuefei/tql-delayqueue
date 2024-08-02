@@ -1,4 +1,4 @@
-package tql.delayqueue.autoconfigure;
+package tql.delayqueue;
 
 import org.springframework.stereotype.Component;
 import tql.delayqueue.config.NamespaceConfig;
