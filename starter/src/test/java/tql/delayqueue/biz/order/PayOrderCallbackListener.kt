@@ -1,13 +1,15 @@
-package tql.delayqueue.biz.order;
+package tql.delayqueue.biz.order
 
-import lombok.extern.slf4j.Slf4j;
-import tql.delayqueue.Namespace;
-import tql.delayqueue.callback.CallbackListener;
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
+import tql.delayqueue.Namespace
+import tql.delayqueue.callback.CallbackListener
+
 @Namespace(name = "payOrder", executeBatchSize = 2)
-@Slf4j
-public class PayOrderCallbackListener implements CallbackListener {
-    @Override
-    public <T> void doCallback(String namespace, T data) {
-        log.info("payOrder callback, namespace:"+ namespace + ", data:" + data);
+class PayOrderCallbackListener:CallbackListener {
+    private val logger: Logger = LoggerFactory.getLogger(PayOrderCallbackListener::class.java)
+
+    override fun <T : Any?> doCallback(namespace: String?, data: T) {
+        logger.info("kt: payOrder callback, namespace:$namespace, data:$data")
     }
 }

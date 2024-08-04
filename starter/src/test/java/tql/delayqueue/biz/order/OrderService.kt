@@ -1,30 +1,30 @@
-package tql.delayqueue.biz.order;
+package tql.delayqueue.biz.order
 
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-import tql.delayqueue.DelayQueueElement;
-import tql.delayqueue.TQLExecuteService;
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.stereotype.Service
+import tql.delayqueue.DelayQueueElement
+import tql.delayqueue.TQLExecuteService
+import javax.annotation.PostConstruct
 
-/**
- * @Description
- */
 @Service
-@Slf4j
-public class OrderService {
+class OrderService {
     @Autowired
-    private TQLExecuteService tqlExecuteService;
+    private lateinit var tqlExecuteService: TQLExecuteService
+    private val logger: Logger = LoggerFactory.getLogger(OrderService::class.java)
 
-    public void init() {
-        log.info("order service init start");
-        for (int i = 1;i < 10;i++) {
-            tqlExecuteService.executeWithFixedDelay(new DelayQueueElement<>(String.valueOf(i), "order" + "_" + i, "payOrder"), 1);
+    @PostConstruct
+    fun init() {
+        logger.info("kt: order service init start")
+        for (i in 1..10) {
+            tqlExecuteService.executeWithFixedDelay(DelayQueueElement(i.toString(), "order_$i", "payOrder"), 1)
             try {
-                Thread.sleep(1000);
-            } catch (InterruptedException e) {
+              Thread.sleep(1000)
+            } catch (e:InterruptedException) {
                 // ignore
             }
         }
-       log.info("order service init success");
+        logger.info("order service init success")
     }
 }

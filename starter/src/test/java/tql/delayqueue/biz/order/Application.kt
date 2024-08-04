@@ -1,28 +1,22 @@
-package tql.delayqueue.biz.order;
+package tql.delayqueue.biz.order
 
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.context.ConfigurableApplicationContext;
-import org.springframework.context.annotation.ComponentScan;
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
+import org.springframework.boot.SpringApplication
+import org.springframework.boot.autoconfigure.SpringBootApplication
+import org.springframework.context.annotation.ComponentScan
 
-/**
- * @Description
- */
 @SpringBootApplication
-@ComponentScan(basePackages = {"tql.delayqueue"})
-public class Application {
-    private static ConfigurableApplicationContext context;
+@ComponentScan(basePackages = ["tql.delayqueue"])
+open class Application {
+    private val logger:Logger = LoggerFactory.getLogger(Application::class.java)
 
-    public static void main(String[] args) {
+    fun main() {
         try {
-            Application.context = SpringApplication.run(Application.class, args);
-            System.out.println("=======================启动成功==============================");
-            OrderService orderService = context.getBean(OrderService.class);
-            orderService.init();
-        } catch (Throwable t) {
-            t.printStackTrace();
-            Runtime.getRuntime().exit(1);
+            SpringApplication.run(Application::class.java)
+        }catch (e:Exception) {
+            logger.error("app run error", e)
+            throw RuntimeException(e)
         }
     }
-
 }
