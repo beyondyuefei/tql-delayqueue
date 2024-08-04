@@ -27,3 +27,6 @@
 hs_err_pid*
 /target/
 *.iml
+/starter/target/test-classes/logback.xml
+/starter/target/classes/META-INF/spring.factories
+/starter/target/test-classes/META-INF/starter.kotlin_module
