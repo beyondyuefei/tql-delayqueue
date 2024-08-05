@@ -24,7 +24,7 @@ private TQLExecuteService tqlExecuteService;
 3、实现namespace级别的回调逻辑
 
 ```
-@Namespace(name = "payOrder", executeBatchSize = 2)
+@Namespace(name = "payOrder")
 @Slf4j
 public class PayOrderCallbackListener implements CallbackListener {
     @Override
