@@ -32,6 +32,9 @@ public class RoundRobinPartitionAssignerServiceImpl extends AbstractPartitionAss
     }
 
     /**
+     * 注： 这里参考了 Apache dubbo 的 RR 实现
+     *
+     *
      * 在加权轮询算法中，totalWeight 变量用于计算所有服务提供者的总权重，而将被选择的 worker 的 current 值减少 totalWeight 是为了确保下次选择时能够按照正确的权重比例进行轮询。
      * totalWeight 的作用
      *   totalWeight 的目的是记录所有服务提供者的权重之和。这是因为我们需要知道总的权重值，才能根据各个服务提供者的权重比例来选择下一个要使用的服务提供者。具体来说，在每次选择服务提供者时，我们希望选择当前累计值（即 current）最大的服务提供者。为了确保选择是基于权重的，我们需要在每次选择后将该服务提供者的 current 减去 totalWeight。

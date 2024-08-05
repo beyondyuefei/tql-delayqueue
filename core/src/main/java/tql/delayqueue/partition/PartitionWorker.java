@@ -49,6 +49,14 @@ public class PartitionWorker implements Serializable {
     private transient final RedissonClient redissonClient = RedissonClientFactory.getInstance();
     private transient final AtomicBoolean initialized = new AtomicBoolean(false);
 
+    public PartitionWorker() {}
+
+    // todo: just for testcase , is a bad small ?
+    public PartitionWorker(final int weight, final String workerUniqueIdentifier) {
+        this.weight = weight;
+        this.workerUniqueIdentifier = workerUniqueIdentifier;
+    }
+
     public void init() {
         if (initialized.compareAndSet(false, true)) {
             this.appUniqueIdentifier = GlobalConfig.appUniqueIdentifier;
