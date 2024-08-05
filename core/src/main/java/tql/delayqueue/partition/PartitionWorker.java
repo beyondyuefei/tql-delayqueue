@@ -51,7 +51,7 @@ public class PartitionWorker implements Serializable {
 
     public PartitionWorker() {}
 
-    // todo: just for testcase , is a bad small ?
+    // todo: just for testcase , is a bad taste ?
     public PartitionWorker(final int weight, final String workerUniqueIdentifier) {
         this.weight = weight;
         this.workerUniqueIdentifier = workerUniqueIdentifier;
