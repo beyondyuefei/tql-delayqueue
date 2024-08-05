@@ -14,11 +14,15 @@
     </dependency>
 ```
 
-2、在你的Spring服务中注入API服务
+2、在你的Spring服务中注入tql服务并发送延迟消息
 
 ```
 @Autowired
 private TQLExecuteService tqlExecuteService;
+
+public void sendDelayOrderCallbackMessage() {
+   tqlExecuteService.executeWithFixedDelay(new DelayQueueElement<>(orderCode), orderDataMap, "payOrder"), 60);
+}
 ```
 
 3、实现namespace级别的回调逻辑
