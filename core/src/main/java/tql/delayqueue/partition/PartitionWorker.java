@@ -27,6 +27,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class PartitionWorker implements Serializable {
     private volatile String appUniqueIdentifier;
     private volatile String workerUniqueIdentifier;
+    private volatile int weight;
     @Setter
     private volatile long lastHeartbeatTimeInMillis;
     @Setter
@@ -58,6 +59,8 @@ public class PartitionWorker implements Serializable {
             for (NamespaceConfig namespaceConfig : GlobalConfig.namespaceConfigs) {
                 this.executeBizBatchSize.put(namespaceConfig.getNamespace(), namespaceConfig.getExecuteBizBatchSize());
             }
+            // todo: 需要根据每个worker的配置读取，默认值为100； 同时，为了提前知道每个worker，需要对上述的 workerUniqueIdentifier 按照约定命名才行
+            this.weight = 100;
             redissonClient.getList(appUniqueIdentifier).add(this);
             heartbeatThread = new HeartbeatThread("TQL-Partition-Worker-Heartbeat-Thread");
             heartbeatThread.start();
