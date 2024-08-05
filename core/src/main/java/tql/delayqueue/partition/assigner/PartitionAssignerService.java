@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * @Description
+ * 为 {@link NamespaceConfig#namespace} 分配每个{@link PartitionWorker}负责的Partitions，具体有不同的LoadBalance算法实现
  */
 public interface PartitionAssignerService {
     /**
